@@ -1,6 +1,6 @@
 # CLI Tool for USB Dongle
 
-This repository contains a Command Line Interface (CLI) tool for interacting with a USB dongle device. The tool allows users to perform various operations such as EEPROM read/write, LED control, and ADC reading via a serial connection.
+This repository contains simulation for the Command Line Interface (CLI) tool for interacting with a USB dongle device. The tool allows users to perform various operations such as EEPROM read/write, LED control, and ADC reading via virtual serial connection.
 
 ## Overview
 
