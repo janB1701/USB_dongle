@@ -29,6 +29,6 @@ def simulate_esp32(port):
 if __name__ == "__main__":
     import sys
     if len(sys.argv) < 2:
-        print("Usage: python simulate_esp32.py <port>")
+        print("Usage: ./test_cli <port>")
     else:
         simulate_esp32(sys.argv[1])

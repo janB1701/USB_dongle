@@ -43,6 +43,9 @@ def handle_led(ser, action):
     else:
         print("Unknown LED action")
 
+    response = ser.readline().strip()
+    print ("Recheived data: " + response.decode())
+
 # ADC read (bonus)
 def handle_adc_read(ser):
     ser.write(b'read_adc\n')
