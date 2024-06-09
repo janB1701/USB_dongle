@@ -5,7 +5,7 @@ This Python script provides a command-line interface (CLI) for interacting with 
 ## Features
 
 - **Ping Command**: Check if the dongle is responsive.
-- **EEPROM Read/Write**: Read from and write to the EEPROM.
+- **EEPROM Read/Write**: Read from and write to the EEPROM. (TO DO!)
 - **LED Control**: Turn the LED on, off, or make it blink.
 - **ADC Read**: Read analog-to-digital converter (ADC) values.
 - **Blink Command**: Blink the LED for a specified duration.
