@@ -1,21 +1,3 @@
-/* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2024 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
-/* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
@@ -34,6 +16,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define RX_BUFFER_SIZE 128 // Define RX_BUFFER_SIZE
+//word length used for string compare in UART interrupt
 #define ping_morning_diff 12
 #define ping_diff 4
 #define LED_on_diff 6
@@ -55,18 +38,12 @@ UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
 
-UART_HandleTypeDef huart3;
-TIM_HandleTypeDef htim6;
-ADC_HandleTypeDef hadc1;
-
 //UART
 uint8_t data_buffer[100]; // data buffer
 uint8_t recvd_data; // receive buffer
 uint32_t count=0; // count how many bytes are received
 
-//LED
-uint8_t rx_buffer[128];
-uint8_t rx_data;
+// flag variables used in UART interrupt
 volatile uint8_t led_blinking = 0;
 volatile uint32_t blink_counter = 0;
 volatile uint32_t total_blink_counter = 0;
@@ -82,6 +59,12 @@ char i[5];
 
 //ADC1
 uint16_t AD_RES = 0;
+
+typedef enum {
+    IDLE_STATE,
+    LED_BLINK_STATE,
+    OTHER_FUNCTION_STATE
+} TimerState;
 
 TimerState timerState = IDLE_STATE;
 uint32_t otherFunctionCounter = 0;
@@ -153,6 +136,7 @@ void process_uart_command(uint8_t* cmd)
 	}
 }
 
+// Function used for setting initial call to STM (blink LED 2 times)
 void morning_led() {
     led_blinking = 1;
     blink_counter = 0;
@@ -182,6 +166,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
   uint8_t pong_morning[] = "dongle is alive\r\n";
   uint8_t pong_msg[] = "pong\r\n";
@@ -211,7 +196,7 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   // Start UART reception in interrupt mode
-  HAL_UART_Receive_IT(&huart3, &rx_data, 1);
+  HAL_UART_Receive_IT(&huart3, &recvd_data, 1);
 
   // Start TIM6 in interrupt mode
   HAL_TIM_Base_Start_IT(&htim6);
@@ -281,6 +266,8 @@ int main(void)
   }
   /* USER CODE END 3 */
 }
+
+// System initialization down here...
 
 /**
   * @brief System Clock Configuration
