@@ -83,12 +83,6 @@ char i[5];
 //ADC1
 uint16_t AD_RES = 0;
 
-typedef enum {
-    IDLE_STATE,
-    LED_BLINK_STATE,
-    OTHER_FUNCTION_STATE
-} TimerState;
-
 TimerState timerState = IDLE_STATE;
 uint32_t otherFunctionCounter = 0;
 /* USER CODE END PV */
@@ -188,7 +182,6 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
   */
 int main(void)
 {
-
   /* USER CODE BEGIN 1 */
   uint8_t pong_morning[] = "dongle is alive\r\n";
   uint8_t pong_msg[] = "pong\r\n";
