@@ -18,7 +18,7 @@ This Python script provides a command-line interface (CLI) for interacting with 
 
 ## Installation
 
-Install the `pyserial` library if you haven't already:
+Install the `pyserial` library.
 
 ## Usage
 
