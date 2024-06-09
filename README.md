@@ -6,7 +6,7 @@ This repository contains two main components: a Python CLI tool and STM32 firmwa
 
 ## CLI (Command-Line Interface)
 
-The CLI tool, located in the `cli` directory, allows you to interact with a USB dongle via a serial port. It supports various commands such as pinging the dongle, controlling LEDs, reading/writing EEPROM, and reading ADC values.
+The CLI tool, located in the `cli` directory, allows you to interact with a USB dongle via a serial port. It supports various commands such as pinging the dongle, controlling LEDs, reading/writing EEPROM (TO DO!), and reading ADC values.
 
 ### Usage
 
