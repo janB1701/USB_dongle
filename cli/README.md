@@ -25,12 +25,7 @@ Install the `pyserial` library if you haven't already:
    ```bash
    python usb_dongle_cli.py -p /dev/ttyACM0
    
-   ```bash
    led on
-   ```bash
    led off
-   ```bash
    blink ms
-   
-   ```bash
    ping
