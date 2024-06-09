@@ -15,7 +15,11 @@ def init (ser):
     ser.write (init_command.encode())
     response = ser.readline().strip()
     if response == b'dongle is alive':
-        print ("Dongle is alive")
+        print ("Dongle is alive!!!!")
+        return 1;
+    else:
+        print ("Dongle is not alive!!!!")
+        return 0;
 
 # Handle ping command
 def handle_ping(ser):
@@ -82,9 +86,11 @@ def main():
 
     ser = init_serial(args.port)
 
-    init(ser); # Call dongle if it is alive
+    init_ok = init(ser); # Call dongle if it is alive
 
     while True:
+        if init_ok == 0:
+            break
         try:
             user_input = input("Enter command: ").strip().split()
             if not user_input:
