@@ -2,6 +2,7 @@
 
 import argparse
 import serial
+import random
 import sys
 
 # Initialize serial communication
@@ -52,8 +53,17 @@ def handle_led(ser, action):
 # ADC read
 def handle_adc_read(ser):
     ser.write(b'adc\r')
-    value = ser.read(2)
-    print("ADC Value:", int.from_bytes(value, 'big'))
+    response = ser.readline().strip()
+    try:
+        adc_value = int(response)
+        print("ADC value:", adc_value)
+        #return adc_value,
+        random.seed (adc_value)
+        random_number = random.random()
+        print ("Random number with ADC seed: " + str(int(random_number*1000)))
+    except ValueError:
+        print("Invalid ADC value received:", response)
+    
 
 # Blink LED for a specified duration
 def handle_blink(ser, duration):
