@@ -5,6 +5,17 @@ import serial
 import random
 import sys
 
+# All the commands in help menu
+command_help = {
+"ping": "Send ping",
+"eeprom": "Usage: eeprom <read/write> <filename>",
+"led": "Usage: led <on/off/blink>",
+"adc": "Generate random number from adc value",
+"blink": "Usage: blink <duration_ms>",
+"stop_blink": "Stop LED blink",
+"exit": "Exit the CLI"
+}
+
 # Initialize serial communication
 def init_serial(port):
     return serial.Serial(port, baudrate=115200, timeout=1)
@@ -25,7 +36,7 @@ def init (ser):
 def handle_ping(ser):
     ser.write(b'ping\r')  # Make sure to end with a \r character
     response = ser.readline().strip()  # Use readline to capture the response
-    if response == b'pong':
+    if response == b'pong' or response == b'\x00pong':
         print("Dongle is alive")
     else:
         print("No response from dongle")
@@ -79,6 +90,18 @@ def handle_stop_blink(ser):
     command = f'stop_blink\r'
     ser.write(command.encode())
 
+# Handle help
+def show_help(command=None):
+    if command:
+        if command in command_help:
+            print(f"{command}: {command_help[command]}")
+        else:
+            print(f"No help available for unknown command: {command}")
+    else:
+        print("Available commands:")
+        for cmd, desc in command_help.items():
+            print(f"  {cmd}: {desc}")
+
 def main():
     parser = argparse.ArgumentParser(description="CLI tool for USB dongle")
     parser.add_argument("-p", "--port", default="/dev/ttyUSB0", help="Serial port")
@@ -87,6 +110,8 @@ def main():
     ser = init_serial(args.port)
 
     init_ok = init(ser); # Call dongle if it is alive
+
+
 
     while True:
         if init_ok == 0:
@@ -100,6 +125,11 @@ def main():
             if command == "exit": # Exit the cli
                 print("Exiting...")
                 break
+            elif command == "help":
+                if len (user_input) == 2:
+                    show_help(user_input[1])
+                else:
+                    show_help()
             elif command == "ping": # Send ping
                 handle_ping(ser)
             elif command == "eeprom": # Placeholder for future implementations
@@ -118,7 +148,7 @@ def main():
             elif command == "adc":
                 handle_adc_read(ser)
             elif command == "stop_blink":
-                handle_stop_blink(ser);
+                handle_stop_blink(ser)
             elif command == "blink":
                 if len(user_input) < 2:
                     print("Usage: blink <duration_ms>")
@@ -135,5 +165,5 @@ def main():
 
     ser.close()
 
-if __name__ == "__main__":
+if _name_ == "_main_":
     main()
