@@ -2,10 +2,23 @@
 
 import argparse
 import serial
+import string
 import random
-import sys
+import re
 
-# All the commands in help menu
+def cut_string_at_backslash(input_string):
+    # Find the index of the first '\' character
+    index = input_string.find('\\')
+    
+    if index != -1:
+        # If '\' is found, slice the string up to but not including '\' character
+        result = input_string[:index]
+    else:
+        # If '\' is not found, return the original string
+        result = input_string
+    
+    return result
+
 command_help = {
 "ping": "Send ping",
 "eeprom": "Usage: eeprom <read/write> <filename>",
@@ -41,20 +54,30 @@ def handle_ping(ser):
     else:
         print("No response from dongle")
 
-# EEPROM read/write, not implemented
+# flash read/write
 def handle_eeprom(ser, action, filename):
     if action == 'read':
-        ser.write(b'read_eeprom\r')
-        data = ser.read(128) 
-        with open(filename, 'wb') as f:
-            f.write(data)
+        ser.write(b'read_flash\r')
+        print ("reading flash")
+        data = ser.readline()
+        if data == '' or data == b'\x00': # If there was a problem with reading usart msgs
+            print ("reading again")
+            ser.write(b'read_flash\r')
+            data = ser.readline()
+        if "NAN" in str(data):
+            print ("There is no data in flash")
+        else:
+            print (data)
+            with open(filename, 'wb') as f:
+                f.write(data)
     elif action == 'write':
-        ser.write(b'write_eeprom\r')
+        ser.write(b'write_flash\r')
         with open(filename, 'rb') as f:
             data = f.read()
+        print ("ser write")
         ser.write(data)
     else:
-        print("Unknown EEPROM action")
+        print("Unknown flash action")
 
 # Control LED
 def handle_led(ser, action):
@@ -70,10 +93,10 @@ def handle_adc_read(ser):
     ser.write(b'adc\r')
     response = ser.readline().strip()
     try:
-        adc_value = int(response)
-        print("ADC value:", adc_value)
-        #return adc_value,
-        random.seed (adc_value)
+        adc_value = str(response)
+        numeric_data = ''.join(filter(lambda x: x.isdigit(), adc_value))
+        #print("ADC value:", numeric_data)
+        random.seed (numeric_data)
         random_number = random.random()
         print ("Random number with ADC seed: " + str(int(random_number*1000)))
     except ValueError:
@@ -90,7 +113,6 @@ def handle_stop_blink(ser):
     command = f'stop_blink\r'
     ser.write(command.encode())
 
-# Handle help
 def show_help(command=None):
     if command:
         if command in command_help:
@@ -165,5 +187,5 @@ def main():
 
     ser.close()
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     main()
