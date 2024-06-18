@@ -115,6 +115,8 @@ int main(void)
   uint8_t pong_msg[] = "pong\r\n";
   int toggle = 0;
   char send_adc[10];
+  uint32_t write_to_addr = 0x0801E010;
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -205,10 +207,14 @@ int main(void)
 		turn_off_led = 0;
 	}
 	if (ready_to_write == 1) {
-		process_serial_data();
-		ready_to_write = 0;
+		//process_serial_data();
+		Flash_Write_Data(write_to_addr , (uint32_t *)data_buffer, count);
 		memset(data_buffer, 0, count); // enpty the data buffer
+		Flash_Read_Data(write_to_addr, count);
 		count = 0;
+		//write_to_addr += 0xFF;
+		ready_to_write = 0;
+		flash_data = 0;
 	}
 	HAL_ADC_Start_IT(&hadc1); // Start again with ADC1 interrupt
   }

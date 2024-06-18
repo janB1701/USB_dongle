@@ -28,6 +28,7 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32h5xx_hal_flash.h"
+#include "stm32h5xx_hal.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -43,6 +44,13 @@ void MX_FLASH_Init(void);
 void erase_flash(uint32_t startAddress);
 void write_to_flash(uint32_t startAddress, uint8_t *data, uint32_t length);
 void process_serial_data(void);
+
+uint32_t Flash_Write_Data (uint32_t StartSectorAddress, uint32_t *data, uint16_t numberofwords);
+void Flash_Read_Data (uint32_t StartSectorAddress, uint16_t numberofwords);
+void Convert_To_Str (uint32_t *Data, char *Buf);
+
+void Flash_Write_NUM (uint32_t StartSectorAddress, float Num);
+float Flash_Read_NUM (uint32_t StartSectorAddress);
 
 /* USER CODE END Prototypes */
 
