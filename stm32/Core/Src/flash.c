@@ -137,32 +137,6 @@ static uint32_t GetSector(uint32_t Address)
   return sector;
 }
 
-
-
-/* Some Controllers like STM32H7Ax have 128 sectors. It's not possible to write each one of them here.
-   You can come up with easier ways to set the sector numbers. FOR EXAMPLE
-
-static uint32_t GetSector(uint32_t Address)
-{
-  uint16_t address = Address-0x08000000;
-  int mentissa = address/8192;  // Each Sector is 8 KB
-
-  return mentissa;
-}
-
-*/
-
-/* The DATA to be written here MUST be according to the List Shown Below
-
-For EXAMPLE:- For H74x/5x, a single data must be 8 numbers of 32 bits word
-If you try to write a single 32 bit word, it will automatically write 0's for the rest 7
-
-*          - 256 bits for STM32H74x/5X devices (8x 32bits words)
-*          - 128 bits for STM32H7Ax/BX devices (4x 32bits words)
-*          - 256 bits for STM32H72x/3X devices (8x 32bits words)
-*
-*/
-
 uint32_t Flash_Write_Data (uint32_t StartSectorAddress, uint32_t *data, uint16_t numberofwords)
 {
 
