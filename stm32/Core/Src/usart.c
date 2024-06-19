@@ -149,21 +149,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		 data_buffer[count++]='\0';
 		 //process_uart_command(data_buffer);
 		 if (flash_data == 0){
-			 process_uart_command(data_buffer);
-			 memset(data_buffer, 0, count); // enpty the data buffer
-			 count = 0;
-		 }else if (flash_data == 1 && recvd_data != '*'){
+			 //process_uart_command(data_buffer);
+			 data_arrived = 1;
+			 //memset(data_buffer, 0, count); // enpty the data buffer
+			 //count = 0;
+		 }else if (flash_data == 1){
 			 ready_to_write = 1;
 		 }
-			 /*if (count < 5) {
-				 data_buffer[count++] = recvd_data;
-			 }else
-			 // formiraj data buffer tako da kad slozim 32bita (4 recv_data) onda to sejvam u memoriju, resetiraj data_buffer
-			 // ako je count == 4 onda spremi u memoriju i resetiraj data buffer, count stavi na 0, tamo dole u main to treba
-				 ready_to_write = 1;
-		 }else if (recvd_data == '*')
-			 flash_data = 0;*/
-		 //HAL_UART_Receive_IT(&huart3,&recvd_data,1); //start next data receive interrupt
 	 }
 	 else
 	 {
@@ -214,6 +206,8 @@ void process_uart_command(uint8_t* cmd)
 		//count = 0;
 		flash_data = 1;
 		//process_serial_data();
+	}else if (strncmp((const char*)data_buffer, "read_flash", 10) == 0){
+		read_flash = 1;
 	}
 }
 

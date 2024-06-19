@@ -137,6 +137,32 @@ static uint32_t GetSector(uint32_t Address)
   return sector;
 }
 
+
+
+/* Some Controllers like STM32H7Ax have 128 sectors. It's not possible to write each one of them here.
+   You can come up with easier ways to set the sector numbers. FOR EXAMPLE
+
+static uint32_t GetSector(uint32_t Address)
+{
+  uint16_t address = Address-0x08000000;
+  int mentissa = address/8192;  // Each Sector is 8 KB
+
+  return mentissa;
+}
+
+*/
+
+/* The DATA to be written here MUST be according to the List Shown Below
+
+For EXAMPLE:- For H74x/5x, a single data must be 8 numbers of 32 bits word
+If you try to write a single 32 bit word, it will automatically write 0's for the rest 7
+
+*          - 256 bits for STM32H74x/5X devices (8x 32bits words)
+*          - 128 bits for STM32H7Ax/BX devices (4x 32bits words)
+*          - 256 bits for STM32H72x/3X devices (8x 32bits words)
+*
+*/
+
 uint32_t Flash_Write_Data (uint32_t StartSectorAddress, uint32_t *data, uint16_t numberofwords)
 {
 
@@ -145,61 +171,61 @@ uint32_t Flash_Write_Data (uint32_t StartSectorAddress, uint32_t *data, uint16_t
 	int sofar=0;
 	int break_writing = 0;
 
-	 /* Unlock the Flash to enable the flash control register access *************/
-	  HAL_FLASH_Unlock();
+	/* Unlock the Flash to enable the flash control register access *************/
+	HAL_FLASH_Unlock();
 
-	  /* Erase the user Flash area */
+	/* Erase the user Flash area */
 
-	  /* Get the number of sector to erase from 1st sector */
+	/* Get the number of sector to erase from 1st sector */
 
-	  uint32_t StartSector = GetSector(StartSectorAddress);
-	  //uint32_t StartSector = FLASH_SECTOR_7;
-	  uint32_t EndSectorAddress = StartSectorAddress + numberofwords*4;
-	  //uint32_t EndSectorAddress = 0x0801FFFF;
-	  uint32_t EndSector = GetSector(EndSectorAddress);
-	  //uint32_t EndSector = FLASH_SECTOR_7;
+	uint32_t StartSector = GetSector(StartSectorAddress);
+	//uint32_t StartSector = FLASH_SECTOR_7;
+	uint32_t EndSectorAddress = StartSectorAddress + numberofwords*4;
+	//uint32_t EndSectorAddress = 0x0801FFFF;
+	uint32_t EndSector = GetSector(EndSectorAddress);
+	//uint32_t EndSector = FLASH_SECTOR_7;
 
-	  /* Fill EraseInit structure*/
-	  EraseInitStruct.TypeErase     = FLASH_TYPEERASE_SECTORS;
-	  //EraseInitStruct.VoltageRange  = FLASH_VOLTAGE_RANGE_3;
-	  EraseInitStruct.Sector        = StartSector;
+	/* Fill EraseInit structure*/
+	EraseInitStruct.TypeErase     = FLASH_TYPEERASE_SECTORS;
+	//EraseInitStruct.VoltageRange  = FLASH_VOLTAGE_RANGE_3;
+	EraseInitStruct.Sector        = StartSector;
 
-	  // The the proper BANK to erase the Sector
-	  if (StartSectorAddress < 0x08010000)
-		  EraseInitStruct.Banks     = FLASH_BANK_1;
-	  else EraseInitStruct.Banks    = FLASH_BANK_2;
+	// The the proper BANK to erase the Sector
+	if (StartSectorAddress < 0x08010000)
+	  EraseInitStruct.Banks     = FLASH_BANK_1;
+	else EraseInitStruct.Banks    = FLASH_BANK_2;
 
-	  EraseInitStruct.NbSectors     = (EndSector - StartSector) + 1;
+	EraseInitStruct.NbSectors     = (EndSector - StartSector) + 1;
 
 
-	  if (HAL_FLASHEx_Erase(&EraseInitStruct, &SECTORError) != HAL_OK)
-	  {
-		  return HAL_FLASH_GetError ();
-	  }
+	if (HAL_FLASHEx_Erase(&EraseInitStruct, &SECTORError) != HAL_OK)
+	{
+	  return HAL_FLASH_GetError ();
+	}
 
-	  /* Program the user Flash area 8 WORDS at a time
-	   * (area defined by FLASH_USER_START_ADDR and FLASH_USER_END_ADDR) ***********/
-	  //ne moze break_writing bit = 16 na pocetku, treba popravit
-	   while (break_writing<numberofwords)
-	   {
-	     if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_QUADWORD, StartSectorAddress, (uint32_t ) &data[sofar]) == HAL_OK)
-	     {
-	    	 StartSectorAddress += 0x10;
-	    	 sofar += 4;
-	    	 break_writing += 16;
-	     }
-	     else
-	     {
-	       /* Error occurred while writing data in Flash memory*/
-	    	 return HAL_FLASH_GetError ();
-	     }
-	   }
+	/* Program the user Flash area 8 WORDS at a time
+	* (area defined by FLASH_USER_START_ADDR and FLASH_USER_END_ADDR) ***********/
+	//ne moze break_writing bit = 16 na pocetku, treba popravit
+	while (break_writing<numberofwords)
+	{
+	 if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_QUADWORD, StartSectorAddress, (uint32_t ) &data[sofar]) == HAL_OK)
+	 {
+		 StartSectorAddress += 0x10;
+		 sofar += 4;
+		 break_writing += 16;
+	 }
+	 else
+	 {
+	   /* Error occurred while writing data in Flash memory*/
+		 return HAL_FLASH_GetError ();
+	 }
+	}
 
-	  /* Lock the Flash to disable the flash control register access (recommended
-	     to protect the FLASH memory against possible unwanted operation) *********/
-	  HAL_FLASH_Lock();
+	/* Lock the Flash to disable the flash control register access (recommended
+	 to protect the FLASH memory against possible unwanted operation) *********/
+	HAL_FLASH_Lock();
 
-	   return 0;
+	return 0;
 }
 
 

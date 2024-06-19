@@ -76,6 +76,8 @@ extern volatile uint8_t read_next;
 extern uint8_t turn_off_led;
 extern volatile uint8_t flash_data;
 extern volatile uint8_t ready_to_write;
+extern volatile uint8_t read_flash;
+extern volatile uint8_t data_arrived;
 extern char ptr[3];
 extern char i[5];
 
