@@ -9,7 +9,7 @@ This project involves creating a USB dongle using an STM32 microcontroller with 
 - **Ping:** Check if the dongle is alive.
 - **Flash Read/Write:** Access Flash memory.
 - **LED Control:** Turn the LED on/off.
-- **ADC Reading (Bonus):** Read analog-to-digital converter values.
+- **ADC Reading:** Read analog-to-digital converter values.
 
 ## Implementation Details
 
