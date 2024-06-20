@@ -6,19 +6,6 @@ import string
 import random
 import re
 
-def cut_string_at_backslash(input_string):
-    # Find the index of the first '\' character
-    index = input_string.find('\\')
-    
-    if index != -1:
-        # If '\' is found, slice the string up to but not including '\' character
-        result = input_string[:index]
-    else:
-        # If '\' is not found, return the original string
-        result = input_string
-    
-    return result
-
 command_help = {
 "ping": "Send ping",
 "eeprom": "Usage: eeprom <read/write> <filename>",
