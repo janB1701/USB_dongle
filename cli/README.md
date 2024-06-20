@@ -21,7 +21,7 @@ Install the `pyserial` library.
 ## Usage
 
    ```bash
-   python usb_dongle_cli.py -p /dev/ttyACM0
+   python tool.py -p /dev/ttyACM0
    
    led on
    led off
