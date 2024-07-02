@@ -2,26 +2,11 @@
 
 import argparse
 import serial
-import string
 import random
-import re
-
-def cut_string_at_backslash(input_string):
-    # Find the index of the first '\' character
-    index = input_string.find('\\')
-    
-    if index != -1:
-        # If '\' is found, slice the string up to but not including '\' character
-        result = input_string[:index]
-    else:
-        # If '\' is not found, return the original string
-        result = input_string
-    
-    return result
 
 command_help = {
 "ping": "Send ping",
-"eeprom": "Usage: eeprom <read/write> <filename>",
+"flash": "Usage: flash <read/write> <filename>",
 "led": "Usage: led <on/off/blink>",
 "adc": "Generate random number from adc value",
 "blink": "Usage: blink <duration_ms>",
@@ -55,7 +40,7 @@ def handle_ping(ser):
         print("No response from dongle")
 
 # flash read/write
-def handle_eeprom(ser, action, filename):
+def handle_flash(ser, action, filename):
     if action == 'read':
         ser.write(b'read_flash\r')
         print ("reading flash")
@@ -64,12 +49,15 @@ def handle_eeprom(ser, action, filename):
             print ("reading again")
             ser.write(b'read_flash\r')
             data = ser.readline()
+        #cleaned_data = data.replace(b'\x00', b'')
+        data = data.replace (b'\xfe\xff', b'')
+        cleaned_data = data.decode ("utf-8")
         if "NAN" in str(data):
             print ("There is no data in flash")
         else:
-            print (data)
-            with open(filename, 'wb') as f:
-                f.write(data)
+            print (cleaned_data)
+            with open(filename, 'w') as f:
+                f.write("%s" % cleaned_data)
     elif action == 'write':
         ser.write(b'write_flash\r')
         with open(filename, 'rb') as f:
@@ -154,13 +142,13 @@ def main():
                     show_help()
             elif command == "ping": # Send ping
                 handle_ping(ser)
-            elif command == "eeprom": # Placeholder for future implementations
+            elif command == "flash": # Placeholder for future implementations
                 if len(user_input) < 3:
-                    print("Usage: eeprom <read/write> <filename>")
+                    print("Usage: falsh <read/write> <filename>")
                     continue
                 action = user_input[1]
                 filename = user_input[2]
-                handle_eeprom(ser, action, filename)
+                handle_flash(ser, action, filename)
             elif command == "led":
                 if len(user_input) < 2:
                     print("Usage: led <on/off/blink>")
