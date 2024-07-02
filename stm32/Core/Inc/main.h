@@ -66,6 +66,7 @@ extern uint32_t count; // count how many bytes are received
 extern volatile uint8_t led_blinking;
 extern volatile uint32_t blink_counter;
 extern volatile uint32_t total_blink_counter;
+extern volatile uint32_t ping_check_counter;
 extern volatile uint8_t morning_ping;
 extern volatile uint8_t ping_call;
 extern volatile uint8_t led_on;
@@ -79,7 +80,7 @@ extern volatile uint8_t ready_to_write;
 extern volatile uint8_t read_flash;
 extern volatile uint8_t data_arrived;
 extern char ptr[3];
-extern char i[5];
+extern char ms[5];
 
 //ADC1
 extern uint16_t AD_RES;

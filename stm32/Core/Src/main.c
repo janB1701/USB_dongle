@@ -74,6 +74,7 @@ uint32_t no_saved_chars = 0;
 volatile uint8_t led_blinking = 0;
 volatile uint32_t blink_counter = 0;
 volatile uint32_t total_blink_counter = 0;
+volatile uint32_t ping_check_counter = 0;
 volatile uint8_t morning_ping = 0;
 volatile uint8_t ping_call = 0;
 volatile uint8_t led_on = 0;
@@ -86,7 +87,7 @@ uint8_t turn_off_led = 0;
 volatile uint8_t flash_data = 0;
 volatile uint8_t ready_to_write = 0;
 char ptr[3];
-char i[5];
+char ms[5];
 
 //ADC1
 uint16_t AD_RES = 0;
@@ -108,6 +109,7 @@ void morning_led() {
   led_blinking = 1;
   blink_counter = 0;
   total_blink_counter = 0;
+  turn_off_led = 1;
 }
 
 /* USER CODE END 0 */
@@ -168,78 +170,80 @@ int main(void) {
     /* USER CODE BEGIN 3 */
 
     if (data_arrived == 1) {
-      process_uart_command(data_buffer);
-      data_arrived = 0;
-      memset(data_buffer, 0, count);
-      count = 0;
-    } else {
-      // used for Init fo dongle, it blinks 2 times and send message that it is alive
-      if (morning_ping == 1) {
-        morning_ping = 0;
-        morning_led();
-        toggle = 100; //for Init part blinking is set to 100ms
-        turn_off_led = 1;
-        SendDataOverUART(pong_morning, sizeof(pong_morning));
-      }
-      // statements for "dongle alive - init" and also used for "blink xx ms" part of task
-      if (led_blinking) {
-        // Check if it's time to toggle the LED
-        if (blink_counter >= toggle) { // this will toggle LED every toggle ms, timer is set so that it overflows every 1ms
-          HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-          blink_counter = 0; // Reset the toggle counter
-        }
-
-        // Check if the total blink duration has been reached
-        if (total_blink_counter >= 500 && turn_off_led == 1) { // turn off LED after 500 for Init part of program, or keep it running
-          // if "blink xx ms" is activated, it will turn LED off after "stop_blinking" command
-          led_blinking = 0;
-          HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-          total_blink_counter = 0; // Reset the total blink counter
-        }
-      } else if (led_on == 1) {
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-      } else {
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-      }
-      // if "ping" is received send "pong" back
-      if (ping_call == 1) {
-        SendDataOverUART(pong_msg, sizeof(pong_msg));
-        ping_call = 0;
-      }
-      // send adc value back
-      if (adc_call == 1) {
-        adc_call = 0;
-        // convert the integer value to a string
-        sprintf(send_adc, "%d", AD_RES);
-        SendDataOverUART((uint8_t * ) send_adc, sizeof(send_adc));
-      }
-      // some code from blink led for some ms have been added to, just to shorten interrupt call :)...
-      if (blink_ms_call == 1) {
-        led_blinking = 1;
-        blink_ms_call = 0;
-        sscanf(i, "%d", & toggle);
-        turn_off_led = 0;
-      }
-      if (ready_to_write == 1) {
-        //process_serial_data();
-        Flash_Write_Data(write_to_addr, (uint32_t * ) data_buffer, count);
-        memset(data_buffer, 0, count); // enpty the data buffer
-        //Flash_Read_Data(write_to_addr, count);
-        no_saved_chars = count;
-        count = 0;
-        //write_to_addr += 0xFF;
-        ready_to_write = 0;
-        flash_data = 0;
-      }
-      if (read_flash == 1 && no_saved_chars != 0) {
-        Flash_Read_Data(write_to_addr, no_saved_chars);
-        read_flash = 0;
-      } else if (read_flash == 1) {
-        SendDataOverUART(read_fail, sizeof(read_fail));
-        read_flash = 0;
-      }
-      HAL_ADC_Start_IT( & hadc1); // Start again with ADC1 interrupt
+		process_uart_command(data_buffer);
+		data_arrived = 0;
+		memset(data_buffer, 0, count);
+		count = 0;
     }
+	// used for Init fo dongle, it blinks 2 times and send message that it is alive
+	if (morning_ping == 1) {
+		morning_ping = 0;
+		morning_led();
+		toggle = 100; //for Init part blinking is set to 100ms
+		SendDataOverUART(pong_morning, sizeof(pong_morning));
+	}
+	// statements for "dongle alive - init" and also used for "blink xx ms" part of task
+	if (led_blinking) {
+		// Check if it's time to toggle the LED
+		if (blink_counter >= toggle) { // this will toggle LED every toggle ms, timer is set so that it overflows every 1ms
+		  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+		  blink_counter = 0; // Reset the toggle counter
+		}
+
+		// Check if the total blink duration has been reached
+		if (total_blink_counter >= 500 && turn_off_led == 1) { // turn off LED after 500 for Init part of program, or keep it running
+		  // if "blink xx ms" is activated, it will turn LED off after "stop_blinking" command
+		  led_blinking = 0;
+		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+		  total_blink_counter = 0; // Reset the total blink counter
+		}
+	} else if (led_on == 1) {
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+	} else {
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+	}
+	// if "ping" is received send "pong" back
+	if (ping_call == 1) {
+		SendDataOverUART(pong_msg, sizeof(pong_msg));
+		ping_call = 0;
+	}
+	// send adc value back
+	if (adc_call == 1) {
+		adc_call = 0;
+		// convert the integer value to a string
+		sprintf(send_adc, "%d", AD_RES);
+		SendDataOverUART((uint8_t * ) send_adc, sizeof(send_adc));
+	}
+	// some code from blink led for some ms have been added to, just to shorten interrupt call :)...
+	if (blink_ms_call == 1) {
+		led_blinking = 1;
+		blink_ms_call = 0;
+		sscanf(ms, "%d", & toggle);
+		turn_off_led = 0;
+	}
+	if (ready_to_write == 1) {
+		Flash_Write_Data(write_to_addr, (uint32_t * ) data_buffer, count);
+		morning_led();
+		toggle = 100; // toggla for 100ms
+		memset(data_buffer, 0, count); // enpty the data buffer
+		no_saved_chars = count;
+		count = 0;
+		//write_to_addr += 0xFF;
+		ready_to_write = 0;
+		flash_data = 0;
+	}
+	if (read_flash == 1 && no_saved_chars != 0) {
+		Flash_Read_Data(write_to_addr, no_saved_chars-2);
+		read_flash = 0;
+	} else if (read_flash == 1) {
+		SendDataOverUART(read_fail, sizeof(read_fail));
+		read_flash = 0;
+	}
+	/*if (ping_check_counter >= 2000) {
+	  SendDataOverUART(pong_msg, sizeof(pong_msg));
+	  ping_check_counter = 0;
+	}*/
+	HAL_ADC_Start_IT( & hadc1); // Start again with ADC1 interrupt
   }
   /* USER CODE END 3 */
 }

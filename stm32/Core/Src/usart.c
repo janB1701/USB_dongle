@@ -155,7 +155,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef * huart) {
   } else {
     data_buffer[count++] = recvd_data; // every time when interrput is happen, received 1 byte of data
   }
-  HAL_UART_Receive_IT( & huart3, & recvd_data, 1); //start next data receive interrupt
+  HAL_UART_Receive_IT(&huart3, &recvd_data, 1); //start next data receive interrupt
 
 }
 
@@ -174,13 +174,12 @@ void process_uart_command(uint8_t * cmd) {
   } else if (strncmp((const char * ) cmd, "blink", 5) == 0) {
     blink_ms_call = 1;
     // first solution but for in interrupt is not good. but still I have choosed this option as you can enter delays like 10000
-    for (int j = 0; j < sizeof(i); j++) {
+    for (int j = 0; j < sizeof(ms); j++) {
       if (cmd[6 + j] != '\0')
-        i[j] = cmd[6 + j];
+        ms[j] = cmd[6 + j];
       else
-        i[j] = 0;
+        ms[j] = 0;
     }
-    // first solution but for in interrupt is not good. but still I have choosed this option as you can enter delays like 10000
 
     // there is a solution with strncpy but it is also too expensive for interrupt. only for delays up to 999
     //strncpy(ptr, (const char*)data_buffer + 6, 3 - 1);
