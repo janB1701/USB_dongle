@@ -68,7 +68,7 @@
 uint8_t data_buffer[BUFFER_SIZE]; // data buffer
 uint8_t recvd_data; // receive buffer
 uint32_t count = 0; // count how many bytes are received
-uint32_t no_saved_chars = 0;
+volatile uint32_t saved_chars_cnt = 0;
 
 // flag variables used in UART interrupt
 volatile uint8_t led_blinking = 0;
@@ -83,14 +83,23 @@ volatile uint8_t blink_ms_call = 0;
 volatile uint8_t stop_blink = 0;
 volatile uint8_t read_flash = 0;
 volatile uint8_t data_arrived = 0;
+volatile uint8_t sinus_measure = 0;
 uint8_t turn_off_led = 0;
 volatile uint8_t flash_data = 0;
 volatile uint8_t ready_to_write = 0;
+volatile uint8_t flash_adc_write = 0;
 char ptr[3];
 char ms[5];
 
 //ADC1
-uint16_t AD_RES = 0;
+volatile uint16_t AD_RES = 0;
+
+volatile uint32_t adc_buffer[N];
+volatile uint16_t adc_index = 0;
+volatile uint8_t adc_buffer_full = 0;
+
+
+volatile uint32_t write_to_addr = 0x0801E010;
 
 /* USER CODE END PV */
 
@@ -126,7 +135,7 @@ int main(void) {
   uint8_t read_fail[] = "NAN";
   int toggle = 0;
   char send_adc[10];
-  uint32_t write_to_addr = 0x0801E010;
+  //uint32_t write_to_addr = 0x0801E010;
 
   /* USER CODE END 1 */
 
@@ -175,7 +184,7 @@ int main(void) {
 		memset(data_buffer, 0, count);
 		count = 0;
     }
-	// used for Init fo dongle, it blinks 2 times and send message that it is alive
+	// used for Init of dongle, it blinks 2 times and send message that it is alive
 	if (morning_ping == 1) {
 		morning_ping = 0;
 		morning_led();
@@ -211,7 +220,9 @@ int main(void) {
 	if (adc_call == 1) {
 		adc_call = 0;
 		// convert the integer value to a string
-		sprintf(send_adc, "%d", AD_RES);
+		//sprintf(send_adc, "%d", AD_RES);
+		AD_RES = Read_ADC_Once();
+		sprintf(send_adc, "%d\r\n", AD_RES);
 		SendDataOverUART((uint8_t * ) send_adc, sizeof(send_adc));
 	}
 	// some code from blink led for some ms have been added to, just to shorten interrupt call :)...
@@ -225,20 +236,37 @@ int main(void) {
 		Flash_Write_Data(write_to_addr, (uint32_t * ) data_buffer, count);
 		morning_led();
 		toggle = 100; // toggla for 100ms
+
 		memset(data_buffer, 0, count); // enpty the data buffer
-		no_saved_chars = count;
+		saved_chars_cnt = count;
 		count = 0;
-		//write_to_addr += 0xFF;
+
 		ready_to_write = 0;
 		flash_data = 0;
 	}
-	if (read_flash == 1 && no_saved_chars != 0) {
-		Flash_Read_Data(write_to_addr, no_saved_chars-2);
-		read_flash = 0;
+	if (read_flash == 1 && saved_chars_cnt != 0) {
+		if (flash_adc_write == 1) {
+			//Flash_Read_Data_ADC(write_to_addr, saved_chars_cnt-1);
+			Flash_Read_Data_AsText_ADC(write_to_addr, saved_chars_cnt-1);
+			flash_adc_write = 0;
+			read_flash = 0;
+		}else {
+			Flash_Read_Data(write_to_addr, saved_chars_cnt-1);
+			read_flash = 0;
+		}
 	} else if (read_flash == 1) {
 		SendDataOverUART(read_fail, sizeof(read_fail));
 		read_flash = 0;
 	}
+	if (adc_buffer_full == 1){
+		adc_buffer_full = 0;
+		ProcessSineBuffer();
+		HAL_ADC_Start_IT(&hadc1);
+		sinus_measure = 0;
+	}
+//	if (sinus_measure == 1) {
+//		measure_sinus();
+//	}
 	/*if (ping_check_counter >= 2000) {
 	  SendDataOverUART(pong_msg, sizeof(pong_msg));
 	  ping_check_counter = 0;

@@ -146,7 +146,6 @@ uint32_t Flash_Write_Data(uint32_t StartSectorAddress, uint32_t * data, uint16_t
     return HAL_FLASH_GetError();
   }
 
-  //ne moze break_writing bit = 16 na pocetku, treba popravit
   while (break_writing < numberofwords) {
     if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_QUADWORD, StartSectorAddress, (uint32_t) & data[sofar]) == HAL_OK) {
       StartSectorAddress += 0x10;
@@ -165,6 +164,54 @@ uint32_t Flash_Write_Data(uint32_t StartSectorAddress, uint32_t * data, uint16_t
   return 0;
 }
 
+uint32_t Flash_Write_Data_ADC(uint32_t StartSectorAddress, uint32_t *data, uint16_t numberofwords) {
+    static FLASH_EraseInitTypeDef EraseInitStruct;
+    uint32_t SECTORError;
+
+    // Otključaj Flash
+    HAL_FLASH_Unlock();
+
+    // Odredi sektore za brisanje
+    uint32_t StartSector = GetSector(StartSectorAddress);
+    uint32_t EndSectorAddress = StartSectorAddress + numberofwords * 4 - 1;  // zadnja adresa
+    uint32_t EndSector = GetSector(EndSectorAddress);
+
+    EraseInitStruct.TypeErase = FLASH_TYPEERASE_SECTORS;
+
+    // Odredi banku prema adresi
+    if (StartSectorAddress < 0x08010000)
+        EraseInitStruct.Banks = FLASH_BANK_1;
+    else
+        EraseInitStruct.Banks = FLASH_BANK_2;
+
+    EraseInitStruct.Sector = StartSector;
+    EraseInitStruct.NbSectors = (EndSector - StartSector) + 1;
+
+    // Obriši sektore
+    if (HAL_FLASHEx_Erase(&EraseInitStruct, &SECTORError) != HAL_OK) {
+        HAL_FLASH_Lock();
+        return HAL_FLASH_GetError();
+    }
+
+    // Piši podatke u Flash
+    uint16_t words_written = 0;
+    while (words_written < numberofwords) {
+        // HAL_FLASH_Program za quadword piše 16 bajtova (4 riječi) odjednom
+        if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_QUADWORD, StartSectorAddress, (uint64_t*)&data[words_written]) == HAL_OK) {
+            StartSectorAddress += 16;  // pomak za 16 bajtova
+            words_written += 4;        // 4 riječi napisane
+        } else {
+            HAL_FLASH_Lock();
+            return HAL_FLASH_GetError();
+        }
+    }
+
+    // Zaključaj Flash
+    HAL_FLASH_Lock();
+
+    return 0; // uspjeh
+}
+
 void Flash_Read_Data(uint32_t StartSectorAddress, uint16_t numberofwords) {
   uint8_t data;
   while (1) {
@@ -175,5 +222,26 @@ void Flash_Read_Data(uint32_t StartSectorAddress, uint16_t numberofwords) {
     if (!(numberofwords--)) break;
   }
 
+}
+
+void Flash_Read_Data_ADC(uint32_t StartSectorAddress, uint16_t numberofwords) {
+    uint32_t data;
+    while (numberofwords--) {
+        data = *(__IO uint32_t *)StartSectorAddress;
+        SendDataOverUART((uint8_t *)&data, sizeof(data));  // šalje 4 bajta
+        StartSectorAddress += 4; // Pomak za 4 bajta (jedna riječ)
+    }
+}
+
+void Flash_Read_Data_AsText_ADC(uint32_t StartSectorAddress, uint16_t numberofwords) {
+    char buffer[32];
+    uint32_t data;
+
+    while (numberofwords--) {
+        data = *(__IO uint32_t *)StartSectorAddress;
+        int len = snprintf(buffer, sizeof(buffer), "%lu\r\n", data);
+        HAL_UART_Transmit(&huart3, (uint8_t *)buffer, len, HAL_MAX_DELAY);
+        StartSectorAddress += 4;
+    }
 }
 /* USER CODE END 1 */

@@ -19,8 +19,15 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "adc.h"
+#include "main.h"
+#include <stdio.h>
+#include "flash.h"
 
 /* USER CODE BEGIN 0 */
+
+
+
+
 
 /* USER CODE END 0 */
 
@@ -149,8 +156,76 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
 /* USER CODE BEGIN 1 */
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
-    // Read & Update The ADC Result
-    AD_RES = HAL_ADC_GetValue(&hadc1);
-    HAL_ADC_Stop_IT(&hadc1); // Disable ADC interrupt
+//	if (adc_call == 1){
+//	    //Read & Update The ADC Result
+//	    AD_RES = HAL_ADC_GetValue(&hadc1);
+//	    HAL_ADC_Stop_IT(&hadc1); // Disable ADC interrupt
+//	}
+	if (hadc->Instance == ADC1) {
+        if (adc_index < N) {
+            adc_buffer[adc_index++] = (uint32_t) HAL_ADC_GetValue(&hadc1);
+        }
+
+        if (adc_index >= N) {
+            adc_index = 0;
+            adc_buffer_full = 1;
+            HAL_ADC_Stop_IT(&hadc1);  // Zaustavi ADC dok se obrada ne završi
+        } else {
+            HAL_ADC_Start_IT(&hadc1);  // Ponovno pokreni ADC
+        }
+    }
+	HAL_ADC_Stop_IT(&hadc1);
 }
+
+uint16_t Read_ADC_Once(void) {
+    HAL_ADC_Start(&hadc1);
+    HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+    uint16_t value = HAL_ADC_GetValue(&hadc1);
+    HAL_ADC_Stop_IT(&hadc1);
+    return value;
+}
+
+void ProcessSineBuffer(void) {
+    float voltages[N];
+    float sum = 0, vmax = 0, vmin = VREF;
+
+    for (int i = 0; i < N; i++) {
+        voltages[i] = ((float)adc_buffer[i]) * VREF / ADC_MAX;
+    	//voltages[i] = Read_ADC_Once();
+        sum += voltages[i];
+        if (voltages[i] > vmax) vmax = voltages[i];
+        if (voltages[i] < vmin) vmin = voltages[i];
+        //HAL_Delay(100);
+    }
+
+    float avg = sum / N;
+    float amplitude = (vmax - vmin) / 2.0f;
+
+    char msg[100];
+    int len = snprintf(msg, sizeof(msg), "DC offset: %.2f V, Amplitude: %.2f V\r\n", avg, amplitude);
+    if (sinus_measure == 1){
+    	HAL_UART_Transmit(&huart3, (uint8_t*)msg, len, HAL_MAX_DELAY);
+    	Flash_Write_Data_ADC(write_to_addr, (uint32_t *) adc_buffer, 200);
+    	flash_adc_write = 1;
+    	saved_chars_cnt = 200;
+    }
+}
+
+//void measure_sinus(void) {
+//    const int num_samples = 100;
+//    char buffer[32];
+//    for (int i = 0; i < num_samples; i++) {
+//        HAL_ADC_Start(&hadc1);
+//        HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+//        uint16_t value = HAL_ADC_GetValue(&hadc1);
+//
+//        // Pretvori ADC vrijednost u string i pošalji preko USART
+//        int len = snprintf(buffer, sizeof(buffer), "Sample %d: %d\r\n", i, value);
+//        HAL_UART_Transmit(&huart3, (uint8_t*)buffer, len, HAL_MAX_DELAY);
+//
+//        HAL_Delay(10); // sampling period, ovdje 100Hz (10ms delay)
+//    }
+//
+//    sinus_measure = 0;
+//}
 /* USER CODE END 1 */
